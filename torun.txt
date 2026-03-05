@@ -1,0 +1,59 @@
+# How to run RAG Codebase Assistant
+
+This tool provides a built-in Command Line Interface (CLI) to let you chat with code directly from your terminal.
+
+## 1. Installation
+
+First, navigate into the project directory and install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+In order for the `rag-code` terminal command to work globally on your machine, you must install the project in editable mode:
+```bash
+pip install -e .
+```
+
+## 2. Set Up Your API Key
+
+The tool uses an LLM (like OpenAI) to process and answer your questions, so you need to provide an API key. Export it as an environment variable in your terminal:
+```bash
+export OPENAI_API_KEY="sk-your-api-key-here"
+```
+
+## 3. Index a Codebase
+
+Before you can ask questions, you must let the tool scan (or "index") a target codebase.
+
+You can index your local project folder:
+```bash
+rag-code index ./my-project
+```
+
+Or you can index a remote GitHub repository directly:
+```bash
+rag-code index https://github.com/pallets/flask
+```
+
+## 4. Run the Chat Interface
+
+Once indexing is complete, you have two ways to interact with the codebase through the terminal:
+
+**Interactive Chat Mode**  
+This opens a continuous chat session where you can ask follow-up questions:
+```bash
+rag-code chat
+```
+
+**Single Question Mode**  
+If you just want a quick answer and don't want to stay in a chat session:
+```bash
+rag-code ask "How does the routing work?"
+```
+
+## Additional Terminal Features
+
+The CLI also provides a few extra helpful commands:
+- `rag-code stats` - Shows statistics about your indexed databases.
+- `rag-code impact src/auth.py` - Analyzes what would break if you change a specific file.
+- `rag-code search "authentication" --limit 10` - Performs a search without opening the chat interface.
