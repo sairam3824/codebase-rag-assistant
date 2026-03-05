@@ -90,4 +90,11 @@ class HybridSearcher:
     
     def _scores_to_ranks(self, scores: np.ndarray) -> np.ndarray:
         """Convert scores to ranks (0 = best)."""
-        return len(scores) - np.argsort(np.argsort(scores)) - 1
+        if len(scores) == 0:
+            return scores
+
+        # Rank by descending score and keep deterministic order for ties.
+        order = np.argsort(-scores, kind="mergesort")
+        ranks = np.empty(len(scores), dtype=int)
+        ranks[order] = np.arange(len(scores))
+        return ranks
