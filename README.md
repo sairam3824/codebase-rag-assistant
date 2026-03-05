@@ -1,180 +1,124 @@
 # RAG Codebase Assistant
 
-> Chat with any GitHub repository or local codebase using production-grade RAG (Retrieval-Augmented Generation)
+> Chat with any GitHub repository or local codebase using Retrieval-Augmented Generation (RAG).
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
-## Overview
+## What This Project Does
 
-RAG Codebase Assistant is a powerful tool that lets you have intelligent conversations with any codebase. Ask questions like "How does authentication work?" or "What would break if I change this function?" and get accurate answers with code citations.
+RAG Codebase Assistant indexes source code, retrieves relevant code chunks, and answers questions using LLMs with code context.
 
-### Key Features
+You can ask:
+- "How does authentication work?"
+- "Where is this function used?"
+- "What could break if I change this file?"
 
-- **🎯 Code-Aware Chunking**: Uses tree-sitter to split code by function/class boundaries (not arbitrary character limits)
-- **🔍 Hybrid Search**: Combines BM25 keyword search with vector similarity using Reciprocal Rank Fusion
-- **📊 Dependency Analysis**: Tracks imports to understand code relationships and impact
-- **💬 Smart Context**: Includes relevant imports and related files in responses
-- **🌐 15+ Languages**: Python, JavaScript/TypeScript, Java, Go, Rust, C/C++, Ruby, and more
-- **⚡ Multiple Interfaces**: CLI for quick queries, REST API for integration
-- **💾 Local Storage**: ChromaDB vector database with no cloud dependency
-- **🔄 Conversation History**: Natural follow-up questions with context
-
-## Quick Start
-
-### Installation
+## Quick Start (5 commands)
 
 ```bash
-# Clone the repository
+cd rag-codebase-assistant
+pip install -r requirements.txt
+pip install -e .
+export OPENAI_API_KEY="sk-your-api-key-here"
+rag-code index ./my-project && rag-code chat
+```
+
+## Features
+
+- Code-aware chunking via tree-sitter (functions/classes instead of fixed character windows)
+- Vector retrieval in ChromaDB
+- Cross-encoder reranking for better relevance
+- Import-based dependency graph for impact analysis
+- CLI for interactive chat and one-shot questions
+- FastAPI server for programmatic usage
+- Persistent local storage (`./chroma_db` by default)
+
+## Installation
+
+### Prerequisites
+
+- Python 3.8+
+- OpenAI API key
+
+### Setup
+
+```bash
 git clone https://github.com/yourusername/rag-codebase-assistant.git
 cd rag-codebase-assistant
 
-# Install dependencies
 pip install -r requirements.txt
-
-# Install the application so the `rag-code` terminal command works globally
 pip install -e .
 
-# Set your OpenAI API key
 export OPENAI_API_KEY="sk-your-api-key-here"
 ```
 
-### Basic Usage
-
-This tool comes with a built-in Command Line Interface (CLI) specifically designed for terminal use. 
+Verify installation:
 
 ```bash
-# Index a GitHub repository
-rag-code index https://github.com/pallets/flask
+rag-code --help
+```
 
-# Index a local directory
+## CLI Usage
+
+### Core workflow
+
+```bash
+# 1) Index a local repository
 rag-code index ./my-project
 
-# Start interactive chat
+# 2) Start interactive chat
 rag-code chat
 
-# Ask a single question
+# 3) Or ask one question directly
 rag-code ask "How does routing work?"
 ```
 
-### Example Session
-
-```
-$ rag-code chat
-
-You: How does user authentication work in this codebase?
-
-Assistant: The authentication system uses JWT tokens with middleware:
-
-1. Login Flow (auth/login.py):
-   - Validates credentials against database
-   - Generates JWT token with user ID
-   - Returns token to client
-
-2. Middleware (middleware/auth.py):
-   - Validates JWT token on each request
-   - Extracts user info and attaches to context
-   - Returns 401 if invalid
-
-3. Protected Routes (routes/api.py):
-   - Use @require_auth decorator
-   - Access user via request.user
-
-You: What would break if I change the User.email field?
-
-Assistant: Making User.email optional would impact:
-
-**Direct Dependencies**:
-- auth/login.py - Uses email for validation
-- services/email_service.py - Sends emails
-- api/users.py - Returns email in profiles
-
-**Risk Level**: HIGH - Core authentication depends on email
-```
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    INGESTION PIPELINE                        │
-├─────────────────────────────────────────────────────────────┤
-│  GitHub/Local → Code Scanner → Tree-sitter Chunker          │
-│                      ↓                                       │
-│              Dependency Graph Builder                        │
-│                      ↓                                       │
-│         OpenAI Embeddings → ChromaDB Storage                 │
-└─────────────────────────────────────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    RETRIEVAL ENGINE                          │
-├─────────────────────────────────────────────────────────────┤
-│  Query → Hybrid Search (BM25 + Vector)                      │
-│              ↓                                               │
-│         Re-ranking (Cross-Encoder)                           │
-│              ↓                                               │
-│    Context Assembly (Code + Imports + Dependencies)         │
-└─────────────────────────────────────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────────┐
-│                      CHAT INTERFACE                          │
-├─────────────────────────────────────────────────────────────┤
-│  CLI / API → GPT-4 → Formatted Response                     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Advanced Features
-
-### Configuration
-
-Create a `config.json` file for custom settings:
-
-```json
-{
-  "embedding_model": "text-embedding-3-small",
-  "chat_model": "gpt-4-turbo-preview",
-  "search_top_k": 20,
-  "rerank_top_k": 5,
-  "hybrid_search_alpha": 0.5,
-  "max_context_tokens": 8000,
-  "enable_cache": true
-}
-```
-
-Or use environment variables:
+### Full command set
 
 ```bash
-export EMBEDDING_MODEL="text-embedding-3-small"
-export CHAT_MODEL="gpt-4-turbo-preview"
-export SEARCH_TOP_K=20
-```
-
-### Extended CLI Commands
-
-```bash
-# Show database statistics
+rag-code index <source>
+rag-code chat
+rag-code ask "<question>"
 rag-code stats
-
-# Analyze impact of changing a file
-rag-code impact src/auth.py
-
-# Search without chat interface
-rag-code search "authentication" --limit 10
-
-# Cache management
+rag-code impact <file_path>
+rag-code search "<query>" --limit 10
 rag-code cache-info
 rag-code cache-clear
 ```
 
-### REST API
+Examples:
 
-Start the FastAPI server:
+```bash
+# Index GitHub repository
+rag-code index https://github.com/pallets/flask
+
+# Search without chat
+rag-code search "authentication" --limit 10
+
+# Impact analysis
+rag-code impact src/auth.py
+```
+
+## REST API
+
+Start the API server:
 
 ```bash
 python -m src.api
-# Server runs on http://localhost:8000
+# runs on http://localhost:8000
 ```
 
-Index a repository:
+### Endpoints
+
+- `POST /index`
+- `POST /chat`
+- `GET /stats`
+- `POST /clear`
+
+### Example requests
+
+Index GitHub repo:
 
 ```bash
 curl -X POST http://localhost:8000/index \
@@ -182,7 +126,15 @@ curl -X POST http://localhost:8000/index \
   -d '{"source": "https://github.com/user/repo"}'
 ```
 
-Chat with the codebase:
+Index local directory:
+
+```bash
+curl -X POST http://localhost:8000/index \
+  -H "Content-Type: application/json" \
+  -d '{"source": "./my-project"}'
+```
+
+Chat:
 
 ```bash
 curl -X POST http://localhost:8000/chat \
@@ -192,178 +144,117 @@ curl -X POST http://localhost:8000/chat \
 
 ## How It Works
 
-### 1. Code-Aware Chunking
+1. Ingestion
+- Loads source from local path or GitHub.
+- Scans supported code files.
+- Uses tree-sitter to chunk code by semantic boundaries.
+- Extracts imports for dependency tracking.
 
-Uses tree-sitter to parse code and split by semantic boundaries:
+2. Indexing
+- Generates embeddings using OpenAI embeddings API.
+- Stores documents + metadata in ChromaDB.
+- Persists dependency graph to `<db_path>/dependency_graph.json`.
 
-- Preserves complete function/class definitions
-- Includes import statements as context
-- Maintains code structure and readability
-- Supports 15+ programming languages
+3. Retrieval and answer generation
+- Retrieves candidates with vector search from ChromaDB.
+- Re-ranks candidates with a sentence-transformers cross-encoder.
+- Builds token-limited context.
+- Sends context + query to chat model for final response.
 
-### 2. Hybrid Search
+Note: `src/retrieval/hybrid_search.py` includes BM25+vector RRF utility logic, while the default runtime path uses vector retrieval + reranking.
 
-Combines BM25 keyword search with vector similarity:
+## Configuration
 
+Environment variables:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export EMBEDDING_MODEL="text-embedding-3-small"
+export CHAT_MODEL="gpt-4-turbo-preview"
+export SEARCH_TOP_K=20
 ```
-score = α × (1 / (k + vector_rank)) + (1-α) × (1 / (k + bm25_rank))
-```
 
-- Better than pure vector search for exact matches
-- Better than pure keyword search for semantic queries
-- Configurable α parameter (default 0.5)
-
-### 3. Dependency Graph
-
-Tracks import/require statements to build relationships:
-
-- Find what files depend on a given file
-- Transitive dependency analysis
-- Impact assessment for code changes
-
-### 4. Query Type Detection
-
-Automatically adapts responses based on query intent:
-
-| Query Type | Example | Behavior |
-|------------|---------|----------|
-| Explanation | "How does X work?" | Detailed code walkthrough |
-| Impact Analysis | "What breaks if..." | Dependency graph analysis |
-| Usage Search | "Find all usages" | Code search + examples |
-| Test Generation | "Generate tests" | Test case creation |
+You can also use `config.example.json` as a template for custom integrations.
 
 ## Supported Languages
 
 Python, JavaScript, TypeScript, Java, Go, Rust, C, C++, Ruby, PHP, C#, Swift, Kotlin, Scala, Shell
 
-## Performance
-
-Tested on a medium-sized repository (Flask, ~50k LOC):
-
-| Metric | Value |
-|--------|-------|
-| Indexing Speed | ~500 files/minute |
-| Query Latency | 2-3 seconds |
-| Embedding Cost | ~$0.10 per 100k LOC |
-| Storage | ~50MB per 100k LOC |
-
 ## Project Structure
 
-```
+```text
 rag-codebase-assistant/
 ├── src/
-│   ├── ingestion/          # Code loading and chunking
-│   │   ├── cloner.py       # GitHub/local loader
-│   │   ├── chunker.py      # Tree-sitter chunking
-│   │   ├── embedder.py     # OpenAI embeddings
-│   │   └── graph.py        # Dependency graph
-│   ├── retrieval/          # Search and context
-│   │   ├── hybrid_search.py # BM25 + vector
-│   │   ├── reranker.py     # Cross-encoder
-│   │   └── context_builder.py # Context assembly
-│   ├── chat/               # LLM interaction
-│   │   ├── engine.py       # Chat with history
-│   │   └── prompts.py      # System prompts
-│   ├── database.py         # ChromaDB interface
-│   ├── config.py           # Configuration
-│   ├── cache.py            # Caching layer
-│   ├── utils.py            # Utilities
-│   ├── cli.py              # Main CLI
-│   ├── cli_extended.py     # Extended commands
-│   └── api.py              # FastAPI server
-├── tests/                  # Unit tests
-├── examples/               # Usage examples
-├── scripts/                # Utility scripts
+│   ├── ingestion/
+│   │   ├── cloner.py
+│   │   ├── chunker.py
+│   │   ├── embedder.py
+│   │   └── graph.py
+│   ├── retrieval/
+│   │   ├── hybrid_search.py
+│   │   ├── reranker.py
+│   │   └── context_builder.py
+│   ├── chat/
+│   │   ├── engine.py
+│   │   └── prompts.py
+│   ├── cli.py
+│   ├── cli_extended.py
+│   ├── api.py
+│   ├── database.py
+│   ├── config.py
+│   └── cache.py
+├── tests/
+├── examples/
+├── scripts/
 ├── requirements.txt
 ├── setup.py
-├── LICENSE
-└── README.md
+└── torun.txt
 ```
-
-## Development
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest tests/
-
-# With coverage
-pytest --cov=src tests/
-
-# Specific test
-pytest tests/test_chunker.py
-```
-
-### Installation for Development
-
-```bash
-# Install in editable mode
-pip install -e .
-
-# Install dev dependencies
-pip install pytest pytest-cov black flake8
-```
-
-## Comparison with Alternatives
-
-| Feature | RAG Codebase Assistant | GitHub Copilot Chat | Sourcegraph |
-|---------|------------------------|---------------------|-------------|
-| Works Offline | ✅ (after indexing) | ❌ | ❌ |
-| Custom Codebases | ✅ Any repo | ✅ Open repos | ✅ |
-| Dependency Analysis | ✅ Built-in | ⚠️ Limited | ✅ |
-| Cost | Pay-per-use (OpenAI) | Subscription | Enterprise |
-| Privacy | ✅ Local storage | ❌ Cloud-based | ❌ Cloud |
-| Open Source | ✅ Apache 2.0 | ❌ Closed | Partial |
-| Customizable | ✅ Fully | ❌ No | Limited |
 
 ## Troubleshooting
 
-### "No indexed codebase found"
+### `rag-code: command not found`
+
 ```bash
-# Make sure you've indexed first
-rag-code index ./your-project
+pip install -e .
 ```
 
-### "OpenAI API key not found"
+### `ModuleNotFoundError` for parser/search libraries
+
+```bash
+pip install -r requirements.txt
+```
+
+### `OpenAI API key not found`
+
 ```bash
 export OPENAI_API_KEY="sk-your-key"
 ```
 
-### Slow indexing
-- Large repos take time (normal)
-- Check network speed for GitHub clones
-- Consider indexing specific directories
+### `No indexed codebase found`
 
-### Tree-sitter parse errors
-- Some files may fail to parse (normal)
-- Check file encoding (should be UTF-8)
-- Unsupported languages fall back to simple chunking
+```bash
+rag-code index ./your-project
+```
 
-## Contributing
+### Impact analysis shows no results after upgrade
 
-Contributions are welcome! Please:
+Re-index once so dependency graph persistence file is generated in the DB directory.
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request
+## Development
+
+Run tests:
+
+```bash
+pytest tests/
+```
+
+Run with coverage:
+
+```bash
+pytest --cov=src tests/
+```
 
 ## License
 
-Apache License 2.0 - See [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Tree-sitter](https://tree-sitter.github.io/) for code parsing
-- [ChromaDB](https://www.trychroma.com/) for vector storage
-- [OpenAI](https://openai.com/) for embeddings and chat
-- [Sentence Transformers](https://www.sbert.net/) for re-ranking
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/sairam3824/rag-codebase-assistant/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/sairam3824/rag-codebase-assistant/discussions)
-
----
-
+Apache License 2.0. See [LICENSE](LICENSE).
