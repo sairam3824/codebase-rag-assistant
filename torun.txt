@@ -1,59 +1,64 @@
 # How to run RAG Codebase Assistant
 
-This tool provides a built-in Command Line Interface (CLI) to let you chat with code directly from your terminal.
-
-## 1. Installation
-
-First, navigate into the project directory and install the required dependencies:
+## 1) Go to project
 ```bash
-pip install -r requirements.txt
+cd "/Users/sairammaruri/Documents/New git projects/codebase-rag-assistant"
 ```
 
-In order for the `rag-code` terminal command to work globally on your machine, you must install the project in editable mode:
+## 2) Install dependencies and CLI
 ```bash
+pip install -r requirements.txt
 pip install -e .
 ```
 
-## 2. Set Up Your API Key
-
-The tool uses an LLM (like OpenAI) to process and answer your questions, so you need to provide an API key. Export it as an environment variable in your terminal:
+## 3) Set OpenAI API key
 ```bash
 export OPENAI_API_KEY="sk-your-api-key-here"
 ```
 
-## 3. Index a Codebase
-
-Before you can ask questions, you must let the tool scan (or "index") a target codebase.
-
-You can index your local project folder:
+## 4) Verify CLI is available
 ```bash
-rag-code index ./my-project
+rag-code --help
 ```
 
-Or you can index a remote GitHub repository directly:
+## 5) Index a codebase
 ```bash
+# local folder
+rag-code index ./my-project
+
+# or GitHub repo
 rag-code index https://github.com/pallets/flask
 ```
 
-## 4. Run the Chat Interface
-
-Once indexing is complete, you have two ways to interact with the codebase through the terminal:
-
-**Interactive Chat Mode**  
-This opens a continuous chat session where you can ask follow-up questions:
+## 6) Ask questions
 ```bash
+# interactive chat
 rag-code chat
+
+# single-shot question
+rag-code ask "How does authentication work?"
 ```
 
-**Single Question Mode**  
-If you just want a quick answer and don't want to stay in a chat session:
+## 7) Useful extra commands
 ```bash
-rag-code ask "How does the routing work?"
+rag-code stats
+rag-code impact src/auth.py
+rag-code search "authentication" --limit 10
+rag-code cache-info
+rag-code cache-clear
 ```
 
-## Additional Terminal Features
+## 8) Run API server (optional)
+```bash
+python -m src.api
+```
 
-The CLI also provides a few extra helpful commands:
-- `rag-code stats` - Shows statistics about your indexed databases.
-- `rag-code impact src/auth.py` - Analyzes what would break if you change a specific file.
-- `rag-code search "authentication" --limit 10` - Performs a search without opening the chat interface.
+Then call endpoints:
+```bash
+curl -X POST http://localhost:8000/index -H "Content-Type: application/json" -d '{"source":"./my-project"}'
+curl -X POST http://localhost:8000/chat  -H "Content-Type: application/json" -d '{"query":"How does routing work?"}'
+```
+
+## Notes
+- If `rag-code` is not found, run `pip install -e .` again.
+- If parser modules are missing, run `pip install -r requirements.txt`.
