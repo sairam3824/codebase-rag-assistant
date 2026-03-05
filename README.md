@@ -66,17 +66,17 @@ You: How does user authentication work in this codebase?
 
 Assistant: The authentication system uses JWT tokens with middleware:
 
-1. **Login Flow** (auth/login.py):
+1. Login Flow (auth/login.py):
    - Validates credentials against database
    - Generates JWT token with user ID
    - Returns token to client
 
-2. **Middleware** (middleware/auth.py):
+2. Middleware (middleware/auth.py):
    - Validates JWT token on each request
    - Extracts user info and attaches to context
    - Returns 401 if invalid
 
-3. **Protected Routes** (routes/api.py):
+3. Protected Routes (routes/api.py):
    - Use @require_auth decorator
    - Access user via request.user
 
@@ -362,9 +362,8 @@ Apache License 2.0 - See [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/rag-codebase-assistant/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/rag-codebase-assistant/discussions)
+- **Issues**: [GitHub Issues](https://github.com/sairam3824/rag-codebase-assistant/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sairam3824/rag-codebase-assistant/discussions)
 
 ---
 
-**Built with ❤️ for developers who want to understand code faster.**
