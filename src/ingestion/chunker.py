@@ -35,19 +35,19 @@ class CodeChunker:
     """Split code into semantic chunks respecting boundaries."""
     
     LANGUAGE_MAP = {
-        '.py': ('python', tspython),
-        '.js': ('javascript', tsjavascript),
-        '.jsx': ('javascript', tsjavascript),
-        '.ts': ('typescript', tstypescript),
-        '.tsx': ('tsx', tstypescript),
-        '.java': ('java', tsjava),
-        '.go': ('go', tsgo),
-        '.rs': ('rust', tsrust),
-        '.c': ('c', tsc),
-        '.cpp': ('cpp', tscpp),
-        '.h': ('c', tsc),
-        '.hpp': ('cpp', tscpp),
-        '.rb': ('ruby', tsruby),
+        '.py': ('python', tspython, 'language'),
+        '.js': ('javascript', tsjavascript, 'language'),
+        '.jsx': ('javascript', tsjavascript, 'language'),
+        '.ts': ('typescript', tstypescript, 'language_typescript'),
+        '.tsx': ('tsx', tstypescript, 'language_tsx'),
+        '.java': ('java', tsjava, 'language'),
+        '.go': ('go', tsgo, 'language'),
+        '.rs': ('rust', tsrust, 'language'),
+        '.c': ('c', tsc, 'language'),
+        '.cpp': ('cpp', tscpp, 'language'),
+        '.h': ('c', tsc, 'language'),
+        '.hpp': ('cpp', tscpp, 'language'),
+        '.rb': ('ruby', tsruby, 'language'),
     }
     
     def __init__(self):
@@ -56,12 +56,32 @@ class CodeChunker:
     
     def _init_parsers(self):
         """Initialize tree-sitter parsers for supported languages."""
-        for ext, (lang_name, lang_module) in self.LANGUAGE_MAP.items():
+        for ext, (lang_name, lang_module, language_attr) in self.LANGUAGE_MAP.items():
             if lang_name not in self.parsers:
-                parser = Parser()
-                language = Language(lang_module.language())
-                parser.set_language(language)
-                self.parsers[lang_name] = parser
+                try:
+                    parser = Parser()
+
+                    if hasattr(lang_module, language_attr):
+                        language_factory = getattr(lang_module, language_attr)
+                    elif hasattr(lang_module, "language"):
+                        language_factory = lang_module.language
+                    else:
+                        raise AttributeError(
+                            f"{lang_module.__name__} missing expected language symbol"
+                        )
+
+                    language = Language(language_factory())
+
+                    # tree-sitter >=0.25 uses `parser.language = ...`;
+                    # older releases expose `set_language(...)`.
+                    if hasattr(parser, "set_language"):
+                        parser.set_language(language)
+                    else:
+                        parser.language = language
+                    self.parsers[lang_name] = parser
+                except Exception as e:
+                    # Keep chunker usable even if one grammar package is unavailable.
+                    print(f"Warning: Failed to initialize parser for {ext}: {e}")
     
     def chunk_file(self, file_path: Path, content: str) -> List[CodeChunk]:
         """Chunk a file into semantic units."""
@@ -69,7 +89,7 @@ class CodeChunker:
         if ext not in self.LANGUAGE_MAP:
             return self._fallback_chunk(file_path, content)
         
-        lang_name, _ = self.LANGUAGE_MAP[ext]
+        lang_name, _, _ = self.LANGUAGE_MAP[ext]
         parser = self.parsers.get(lang_name)
         
         if not parser:
@@ -141,8 +161,8 @@ class CodeChunker:
                     language=language,
                     chunk_type=n.type,
                     name=name,
-                    start_line=n.start_point[0],
-                    end_line=n.end_point[0],
+                    start_line=n.start_point[0] + 1,
+                    end_line=n.end_point[0] + 1,
                     imports=imports.copy()
                 ))
             
