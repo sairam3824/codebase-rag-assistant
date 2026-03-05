@@ -8,10 +8,10 @@ from rich.markdown import Markdown
 from .ingestion.cloner import CodebaseLoader
 from .ingestion.chunker import CodeChunker
 from .database import CodebaseDB
-from .retrieval.hybrid_search import HybridSearcher
 from .retrieval.reranker import Reranker
 from .retrieval.context_builder import ContextBuilder
 from .chat.engine import ChatEngine
+from .cli_extended import stats, impact, cache_info, cache_clear, search
 
 console = Console()
 
@@ -196,6 +196,13 @@ def ask(question: str, db_path: str):
         title="[bold cyan]Answer[/bold cyan]",
         border_style="cyan"
     ))
+
+# Wire advanced commands into the primary `rag-code` CLI entrypoint.
+cli.add_command(stats)
+cli.add_command(impact)
+cli.add_command(cache_info)
+cli.add_command(cache_clear)
+cli.add_command(search)
 
 
 if __name__ == '__main__':
