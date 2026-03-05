@@ -55,7 +55,12 @@ async def index_codebase(request: IndexRequest):
         if request.source.startswith('http'):
             repo_path = loader.load_from_github(request.source)
         else:
-            repo_path = Path(request.source)
+            repo_path = Path(request.source).resolve()
+            if not repo_path.exists():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Local path does not exist: {request.source}"
+                )
         
         # Scan and chunk
         code_files = loader.scan_directory(repo_path)
@@ -71,7 +76,7 @@ async def index_codebase(request: IndexRequest):
         
         # Index
         db.create_collection(request.collection_name)
-        db.add_chunks(all_chunks)
+        db.add_chunks(all_chunks, base_path=repo_path)
         
         stats = db.get_stats()
         return {
