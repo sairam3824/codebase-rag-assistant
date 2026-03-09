@@ -2,7 +2,7 @@
 
 > Chat with any GitHub repository or local codebase using Retrieval-Augmented Generation (RAG).
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
 ## What This Project Does
@@ -257,4 +257,4 @@ pytest --cov=src tests/
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](LICENSE).
